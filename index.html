@@ -3,23 +3,15 @@
   <head>
     <title>Polydle</title>
     <link rel="icon" type="image/x-icon" href="/icon.png">
-    <meta name="description" content="A Wordle variant where you can solve any number of words at once! Try a new Polydle for each number daily.">
+    <meta name="description" content="A Wordle variant where you have one guess to solve each word.">
     <meta name="keywords" content="Polydle, Quordle, Dordle, Wordle, word game, puzzle, brain teaser">
-    <meta name="author" content="Jack Boettcher">
+    <meta name="author" content="Edward Seoiiu">
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="style.css">
     <meta charset="utf-8" />
-    <meta name="google-site-verification" content="liGWiPH9BWzcJD9GWfb0nCeXSbfqBkr2Agw9by6LqOM"/>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-X3T3MYTFZC"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-X3T3MYTFZC');
-    </script>
   </head>
   <body>
     <script src="index.js"></script>
@@ -33,26 +25,23 @@
     <!-- <div id="modetitle">classic mode</div> -->
     <div id="timer">0.00</div>
     <div id="start-page">
-      <div id="title2">POLYDLE</div>
+      <div id="title2">PERFECTLE</div>
       <div class="subdiv">
-        <div class="subtitle">©2022 Jack Boettcher</div>
-        <div class="subtitle small"><p>Based on <a href="https://quordle.com" target="_blank">Quordle</a> by Freddie Meyer</p></div>
+        <div class="subtitle">©2022 Edward Seoiiu</div>
+        <div class="subtitle small"><p>Source code forked from <a href="https://polydle.github.com" target="_blank">Polydle</a> by Jack Boettcher</p></div>
       </div>
       <div id="howto">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onclick="openHowTo()">
           <path fill="white" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"></path>
         </svg>
       </div>
-      <div id="inputdiv">
-        <div>How many words? (1-2315)</div>
-        <input id="ninput" type="number" value="" min="1" max="2315">
+      <div id="dailydiv" class="buttonsdiv">
+        <div id="dailybtn" class="frontbutton green" onclick="submitN()">Daily Perfectle</div>
       </div>
-      <div id="classicdiv" class="buttonsdiv">
-        <div id="classicbtn" class="frontbutton green" onclick="expandModes('classic')">Classic Polydle</div>
-        <div id="classicdaily" class="backbuttonleft green" onclick="submitN('classic')">Daily</div>
-        <div id="classicrandom" class="backbuttonright notanim white" onclick="submitN('classic',false)">Random</div>
+      <div id="randomdiv" class="buttonsdiv">
+        <div id="randombtn" class="frontbutton yellow" onclick="submitN(false)">Random Perfectle</div>
       </div>
-      <div id="speeddiv" class="buttonsdiv">
+      <!-- <div id="speeddiv" class="buttonsdiv">
         <div id="speedbtn" class="frontbutton yellow" onclick="expandModes('speed')">Speed Polydle</div>
         <div id="speeddaily" class="backbuttonleft notanim white" onclick="submitN('speed')">Daily</div>
         <div id="speedrandom" class="backbuttonright yellow" onclick="submitN('speed',false)">Random</div>
@@ -61,7 +50,7 @@
         <div id="perfectbtn" class="frontbutton white" onclick="expandModes('perfect')">Perfect Polydle</div>
         <div id="perfectdaily" class="backbuttonleft white" onclick="submitN('perfect')">Daily</div>
         <div id="perfectrandom" class="backbuttonright notanim green" onclick="submitN('perfect',false)">Random</div>
-      </div>
+      </div> -->
     </div>
     <div id="howto-page">
       <div id="menu">

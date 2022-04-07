@@ -6,54 +6,38 @@ const uniques = new Set((answerstr + " " + uniquestr).split(" "))
 
 let won = false
 let rand = false
-let mode = "classic"
+// let mode = "classic"
 const search = window.location.search
 const possrand = () => Math.floor(Math.random()*1000000000)
-let n = parseInt(search.substring(1))
+let n = 5
 const date = new Date()
 let day = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000) - (date.getFullYear()-2022)*365 - 42
-if (search.length && !isNaN(search.substring(1))) {
-  if (n > 0 && n < 2316) {
-    window.location.search = "?classic/daily/"+n
-  } else if (n < 0 && n > -2316) {
-    window.location.search = "?classic/random/"+(-n)+"/"+possrand()
-  } else {
+const dayoffset= 54
+const params = search.split("/")
+if (search.length) {
+  if (params.length < 1) {
     window.location.search = ""
-  }
-} else if (search.length) {
-  const params = search.split("/")
-  if (params.length < 3) {
-    window.location.search = ""
-  } else if (!["?classic","?speed","?perfect"].includes(params[0])) {
-    window.location.search = ""
-  } else if (!["daily","random"].includes(params[1])) {
+  } else if (!["?daily","?random"].includes(params[0])) {
     window.location.search = ""
   } else {
-    n = parseInt(params[2])
-    if (isNaN(params[2]) || n < 1 || n > 2315) {
-      window.location.search = ""
-    } else {
-      mode = params[0].substring(1)
-      rand = params[1] === "random"
-      if (rand) {
-        const newrandstr = params[0]+"/"+params[1]+"/"+params[2]+"/"
-        if (params.length === 3) {
+    rand = params[0] === "?random"
+    if (rand) {
+      const newrandstr = params[0]+"/"
+      if (params.length === 1) {
+        window.location.search = newrandstr+possrand()
+      } else {
+        day = parseInt(params[1])
+        if (params[1] == "" || isNaN(params[1]) || day >= 1000000000 || day < 0) {
           window.location.search = newrandstr+possrand()
-        } else if (params.length > 3) {
-          console.log(params[3])
-          day = parseInt(params[3])
-          if (params[3] == "" || isNaN(params[3]) || day >= 1000000000 || day < 0) {
-            window.location.search = newrandstr+possrand()
-          } else {
-            if (params.length > 4) {
-              window.location.search = newrandstr+day
-            }
+        } else {
+          if (params.length > 2 || params[1] != day.toString()) {
+            window.location.search = newrandstr+day
           }
         }
-      } else {
-        if (params.length > 3) {
-          window.location.search = params[0]+"/"+params[1]+"/"+params[2]
-        }
+      }
+    } else {
+      if (params.length > 1) {
+        window.location.search = params[0]
       }
     }
   }
@@ -72,7 +56,7 @@ let perfectlives = 3
 let perfectobscure = 0
 
 const hashStr = str => {
-  let h1 = 0xdeadbeef+n+(mode == "perfect" ? 20000 : (mode == "speed" ? 10000 : 0)), h2 = 0x41c6ce57+day+(rand ? 1000000 : 0);
+  let h1 = 0xdeadbeef+30000, h2 = 0x41c8ce57+day+(rand ? 1000000 : 0);
   for (let i = 0, ch; i < str.length; i++) {
     ch = str.charCodeAt(i);
     h1 = Math.imul(h1 ^ ch, 2654435761);
@@ -86,102 +70,100 @@ const hashStr = str => {
 const setWords = () => {
   answers.sort((i,j) => hashStr(i)-hashStr(j))
   words = answers.slice(0,n)
-  if (mode == "perfect") {
-    const getclue = (w1,w2) => {
-      d1 = {}
-      const out = [0,0,0,0,0]
-      let out2 = 0
-      const powers = [1,3,9,27,81]
-      for (let i = 0; i < 5; i++) {
-        const c1 = w1[i]
-        const c2 = w2[i]
-        if (c1 == c2) {
-          out2 += 2*powers[i]
-          out[i] = 2
+  const getclue = (w1,w2) => {
+    d1 = {}
+    const out = [0,0,0,0,0]
+    let out2 = 0
+    const powers = [1,3,9,27,81]
+    for (let i = 0; i < 5; i++) {
+      const c1 = w1[i]
+      const c2 = w2[i]
+      if (c1 == c2) {
+        out2 += 2*powers[i]
+        out[i] = 2
+      } else {
+        if (!!d1[c1]) {
+          d1[c1] += 1
         } else {
-          if (!!d1[c1]) {
-            d1[c1] += 1
-          } else {
-            d1[c1] = 1
-          }
+          d1[c1] = 1
         }
       }
-      for (let i = 0; i < 5; i++) {
-        const c2 = w2[i]
-        if (!!d1[c2] && !out[i]) {
-          out2 += powers[i]
-          out[i] = 1
-          d1[c2] -= 1
-        }
-      }
-      return out2
     }
-    
-    const canbe = (clues,ws) => {
-      let tot = 0
-      // for (let w2 of answers) {
-      // for (let w2 of allowed) {
-      for (let w2 of uniques) {
-        if (clues.every((c,i) => c == getclue(w2,ws[i]))) {
-          if (!!tot) {
-            return false
-          }
-          tot++
-        }
+    for (let i = 0; i < 5; i++) {
+      const c2 = w2[i]
+      if (!!d1[c2] && !out[i]) {
+        out2 += powers[i]
+        out[i] = 1
+        d1[c2] -= 1
       }
-      // if (!tot) {
-      //   console.log(clues,ws)
-      //   return undefined.hi
-      // }
-      return !!tot
     }
-    
-    const getlist = len => {
-      if (len === 1) {
-        return [words[0]]
-      }
-      for (let start = 0; start < 2315; start++) {
-        const words = [answers.slice(start).concat(answers.slice(0,start))]
-        const lst = [words[0][0]]
-        let i = 1
-        let wordsidx = 0
-        for (let k = 0; k < 4; k++) {
-          while (words[wordsidx].length > 0) {
-            const leftovers = []
-            for (; i < words[wordsidx].length; i++) {
-              const w = words[wordsidx][i]
-              if (canbe(lst.map(w2 => getclue(w,w2)),lst)) {
-                lst.push(w)
-                if (lst.length == len) {
-                  return lst
-                }
-                leftovers.push(...words[wordsidx].slice(i+1))
-                break
-              } else {
-                leftovers.push(w)
-              }
-            }
-            if (lst.length >= 100) {
-              return lst.concat(leftovers.slice(0,len-100))
-            }
-            i = 0
-            words.push(leftovers)
-            wordsidx++
-          }
-        }
-      }
-      return null
-    }
-    const lst = getlist(n)
-    perfectwords = lst
-    // console.log(n,lst)
-    // const start = lst[0]
-    // const rest = lst.slice(1)
-    // lst.sort((i,j) => hashStr(i+"a")-hashStr(j+"a"))
-    // console.log([start,...rest])
-    words = getlist(n)
-    words.sort((i,j) => hashStr(i+"a")-hashStr(j+"a"))
+    return out2
   }
+  
+  const canbe = (clues,ws) => {
+    let tot = 0
+    // for (let w2 of answers) {
+    // for (let w2 of allowed) {
+    for (let w2 of uniques) {
+      if (clues.every((c,i) => c == getclue(w2,ws[i]))) {
+        if (!!tot) {
+          return false
+        }
+        tot++
+      }
+    }
+    // if (!tot) {
+    //   console.log(clues,ws)
+    //   return undefined.hi
+    // }
+    return !!tot
+  }
+  
+  const getlist = len => {
+    if (len === 1) {
+      return [words[0]]
+    }
+    for (let start = 0; start < 2315; start++) {
+      const words = [answers.slice(start).concat(answers.slice(0,start))]
+      const lst = [words[0][0]]
+      let i = 1
+      let wordsidx = 0
+      for (let k = 0; k < 4; k++) {
+        while (words[wordsidx].length > 0) {
+          const leftovers = []
+          for (; i < words[wordsidx].length; i++) {
+            const w = words[wordsidx][i]
+            if (canbe(lst.map(w2 => getclue(w,w2)),lst)) {
+              lst.push(w)
+              if (lst.length == len) {
+                return lst
+              }
+              leftovers.push(...words[wordsidx].slice(i+1))
+              break
+            } else {
+              leftovers.push(w)
+            }
+          }
+          if (lst.length >= 100) {
+            return lst.concat(leftovers.slice(0,len-100))
+          }
+          i = 0
+          words.push(leftovers)
+          wordsidx++
+        }
+      }
+    }
+    return null
+  }
+  const lst = getlist(n)
+  perfectwords = lst
+  // console.log(n,lst)
+  // const start = lst[0]
+  // const rest = lst.slice(1)
+  // lst.sort((i,j) => hashStr(i+"a")-hashStr(j+"a"))
+  // console.log([start,...rest])
+  words = getlist(n)
+  words.sort((i,j) => hashStr(i+"a")-hashStr(j+"a"))
   setUp()
 }
 
@@ -271,12 +253,7 @@ const rowsBefore = s => (
 )
 
 const setNonN = () => {
-  n = 0
   document.getElementById("start-page").style.display = "flex"
-  const prevn = localStorage.getItem("prevn")
-  document.getElementById("ninput").value = prevn ? prevn : 5
-  // const title2 = document.getElementById("title2")
-  // title2.innerHTML = `DAILY POLYDLES #${pad(day.toString(),4)}`
   const title = document.getElementById("title")
   title.innerHTML = ""
   const top = document.getElementById("s-0")
@@ -287,25 +264,15 @@ const setNonN = () => {
   row2.innerHTML = ""
   const row3 = document.getElementById("row3")
   row3.innerHTML = ""
-  document.getElementById("ninput").addEventListener("keypress", e => {
-    if (e.key === "Enter") {
-      submitN()
-    }
-  })
 }
 
-const submitN = (mode,daily=true) => {
-  const nval = document.getElementById("ninput").value
-  n = parseInt(nval)
-  if (isNaN(nval) || n < 1 || n > 2315) {
-    return false
-  }
-  window.localStorage.setItem("prevn",n)
-  const mode2 = !!mode ? mode : "classic"
+const submitN = (daily=true) => {
+  // const nval = document.getElementById("ninput").value
+  // n = parseInt(nval)
   if (daily) {
-    window.location.search = `?${mode2}/daily/`+n
+    window.location.search = "?daily"
   } else {
-    window.location.search = `?${mode2}/random/`+n+"/"+possrand()
+    window.location.search = "?random/"+possrand()
   }
   // window.location.search = "?"+(daily ? "" : "-")+n
 }
@@ -313,7 +280,7 @@ const submitN = (mode,daily=true) => {
 const setN = () => {
   document.getElementById("start-page").style.display = "none"
   const title = document.getElementById("title")
-  title.innerHTML = `${rand ? "RANDOM" : "DAILY"} ${mode === "speed" ? "SPEED " : mode === "perfect" ? "PERFECT " : ""}${n}-DLE${rand ? "" : ` #${pad((day - (mode == "speed" ? 7 : mode == "perfect" ? 45 : 0)).toString(),4)}`}`
+  title.innerHTML = `${rand ? "RANDOM" : "DAILY"} PERFECTLE${rand ? "" : ` #${pad((day - dayoffset).toString(),4)}`}`
   // document.getElementById("modetitle").innerHTML = mode+" mode"
   const top = document.getElementById("s-0")
   top.innerHTML = getSectionString(0)
@@ -341,7 +308,7 @@ const setTime = () => {
     hrs = hrs2
     mns = mns2
     scs = scs2
-    time.innerHTML = "NEXT POLYDLE IN "+hrs+":"+pad(mns,2)+":"+pad(scs,2)
+    time.innerHTML = "NEXT PERFECTLE IN "+hrs+":"+pad(mns,2)+":"+pad(scs,2)
   }
 }
 
@@ -402,7 +369,7 @@ const addSection = () => {
       }
     }
   }
-  if (mode != "perfect" || gotone) {
+  if (gotone) {
     for (let wedge of grays) {
       wedge.classList.add("gray")
     }
@@ -442,17 +409,17 @@ const addSection = () => {
     if (!rand) {
       setInterval(setTime,100)
     }
-    if (mode == "speed" || mode == "perfect") {
-      const endtime = window.localStorage.getItem(`endtime-${mode}${rand ? "-rand" : ""}-${n}`)
-      if (!!endtime && !isNaN(endtime)) {
-        updateSpeedTime(new Date(parseInt(endtime)))
-      } else {
-        const d = new Date()
-        updateSpeedTime(d)
-        window.localStorage.setItem(`endtime-${mode}${rand ? "-rand" : ""}-${n}`,d.getTime())
-      }
-      clearInterval(timerfunc)
+    // if (mode == "speed" || mode == "perfect") {
+    const endtime = window.localStorage.getItem(`endtime${rand ? "-rand" : ""}`)
+    if (!!endtime && !isNaN(endtime)) {
+      updateSpeedTime(new Date(parseInt(endtime)))
+    } else {
+      const d = new Date()
+      updateSpeedTime(d)
+      window.localStorage.setItem(`endtime${rand ? "-rand" : ""}`,d.getTime())
     }
+    clearInterval(timerfunc)
+    // }
     const keyboard = document.getElementById("keyboard")
     keyboard.style.display = "none"
     const winbox = document.getElementById("win")
@@ -461,7 +428,7 @@ const addSection = () => {
       const timer = document.getElementById("time")
       // timer.style.display = "none"
       timer.innerHTML = "NEW"
-      timer.setAttribute("onclick", `(()=>{window.location.search="?${mode}/random/${n}/${possrand()}"})()`)
+      timer.setAttribute("onclick", `(()=>{window.location.search="?random/${possrand()}"})()`)
       timer.style.touchAction = "manipulation"
       timer.style.cursor = "pointer"
     }
@@ -492,9 +459,9 @@ const presskey = (c,save=true,perfectstart=true) => {
   if (won) {
     return
   }
-  if ((mode == "speed" || (mode == "perfect" && perfectstart)) && !starttime) {
+  if (perfectstart && !starttime) {
     starttime = new Date()
-    window.localStorage.setItem(`starttime-${mode}${rand ? "-rand" : ""}-${n}`,starttime.getTime())
+    window.localStorage.setItem(`starttime${rand ? "-rand" : ""}`,starttime.getTime())
     startspeedmode()
   }
   let add = 0
@@ -508,10 +475,10 @@ const presskey = (c,save=true,perfectstart=true) => {
       if (lind === 5 && allowed.has(word.toLowerCase())) {
         addSection()
         if (save) {
-          const currsaved = window.localStorage.getItem(`saved-${mode}${rand ? "-rand" : ""}-${n}`)
-          window.localStorage.setItem(`saved-${mode}${rand ? "-rand" : ""}-${n}`,currsaved+word+",")
+          const currsaved = window.localStorage.getItem(`saved${rand ? "-rand" : ""}`)
+          window.localStorage.setItem(`saved${rand ? "-rand" : ""}`,currsaved+word+",")
         }
-        if (mode == "perfect" && perfectdeath != -1) {
+        if (perfectdeath != -1) {
           const solvedwords = words.filter((w,i) => !!dones[i])
           // console.log("solved",solvedwords)
           for (let word of perfectwords) {
@@ -554,7 +521,7 @@ const presskey = (c,save=true,perfectstart=true) => {
         letter.classList.remove("graytext")
       }
     }
-    if (lind === 5 && mode === "perfect" && !uniques.has(word.toLowerCase())) {
+    if (lind === 5 && !uniques.has(word.toLowerCase())) {
       for (let i = 0; i < n; i++) {
         if (!!dones[i]) {
           continue
@@ -581,50 +548,50 @@ const presskey = (c,save=true,perfectstart=true) => {
 const nums = "0️⃣&1️⃣&2️⃣&3️⃣&4️⃣&5️⃣&6️⃣&7️⃣&8️⃣&9️⃣&🔟".split("&")
 const copy = () => {
   const aux = document.createElement("textarea");
-  let s = `${rand ? "Random" : "Daily"} ${mode === "speed" ? "Speed " : mode === "perfect" ? "Perfect " : ""}${n}-dle${rand ? "" : ` #${pad((day - (mode == "speed" ? 7 : mode == "perfect" ? 45 : 0)).toString(),4)}`}\n`
-  if (mode === "speed") {
-    s += document.getElementById("timer").innerHTML + "\n"
-  }
-  if (mode === "perfect") {
-    s += `${perfectdeath == -1 ? n : perfectdeath-2-perfectobscure}/${n} - ${3-perfectlives}❌ : `
-    const canemoji = dones.every(i => (perfectdeath != -1 && i > perfectdeath - perfectobscure) || i <= 10)
-    s += `${dones.map(i => perfectdeath != -1 && i > perfectdeath - perfectobscure ? (canemoji ? "❎" : "X") : (canemoji ? nums[i] : i)).join(canemoji ? "" : "&")}\n`
-    s += document.getElementById("timer").innerHTML + "\n"
-  } else {
-    const canemoji = dones.every(i => i <= 10)
-    s += `${Math.max(...dones)} : ${canemoji ? dones.map(i => nums[i]).join("") : dones.join("&")}\n`
-  }
-  s += `polydle.github.io/?${mode}/${rand ? "random" : "daily"}/${n}${rand ? "/"+day : ""}`
-  if (mode !== "speed" && mode !== "perfect") {
-    s += "\n\n"
-    for (let i = 0; i < n; i++) {
-      let k = 0
-      let allgreen = false
-      while (!allgreen) {
-        allgreen = true
-        for (let j = 0; j < 5; j++) {
-          const letter = document.getElementById(`l-${k}-${i}-${j}`)
-          if (letter.classList.contains("green")) {
-            s += "🟩"
-          } else {
-            allgreen = false
-            if (letter.classList.contains("yellow")) {
-              s += "🟨"
-            } else {
-              s += "⬜"
-            }
-          }
-        }
-        if (!allgreen || i < n-1) {
-          s += "\n"
-        }
-        k++
-      }
-      if (i < n-1) {
-        s += "\n"
-      }
-    }
-  }
+  let s = `${rand ? "Random" : "Daily"} Perfectle${rand ? "" : ` #${pad((day - dayoffset).toString(),4)}`}\n`
+  // if (mode === "speed") {
+  //   s += document.getElementById("timer").innerHTML + "\n"
+  // }
+  // if (mode === "perfect") {
+  s += `${perfectdeath == -1 ? n : perfectdeath-2-perfectobscure}/${n} - ${3-perfectlives}❌ : `
+  // const canemoji = dones.every(i => (perfectdeath != -1 && i > perfectdeath - perfectobscure) || i <= 10)
+  s += `${dones.map(i => perfectdeath != -1 && i > perfectdeath - perfectobscure ? "❎" : nums[i]).join("")}\n`
+  s += document.getElementById("timer").innerHTML + "\n"
+  // } else {
+  //   const canemoji = dones.every(i => i <= 10)
+  //   s += `${Math.max(...dones)} : ${canemoji ? dones.map(i => nums[i]).join("") : dones.join("&")}\n`
+  // }
+  s += `perfectle-game.github.io/?${rand ? "random" : "daily"}${rand ? "/"+day : ""}`
+  // if (mode !== "speed" && mode !== "perfect") {
+  //   s += "\n\n"
+  //   for (let i = 0; i < n; i++) {
+  //     let k = 0
+  //     let allgreen = false
+  //     while (!allgreen) {
+  //       allgreen = true
+  //       for (let j = 0; j < 5; j++) {
+  //         const letter = document.getElementById(`l-${k}-${i}-${j}`)
+  //         if (letter.classList.contains("green")) {
+  //           s += "🟩"
+  //         } else {
+  //           allgreen = false
+  //           if (letter.classList.contains("yellow")) {
+  //             s += "🟨"
+  //           } else {
+  //             s += "⬜"
+  //           }
+  //         }
+  //       }
+  //       if (!allgreen || i < n-1) {
+  //         s += "\n"
+  //       }
+  //       k++
+  //     }
+  //     if (i < n-1) {
+  //       s += "\n"
+  //     }
+  //   }
+  // }
   aux.innerHTML = s
   document.body.appendChild(aux);
   aux.select();
@@ -656,45 +623,46 @@ const setUp = () => {
     event.preventDefault()
     presskey(c)
   })
-  if (mode == "perfect") {
-    for (let c of perfectwords[0]) {
-      presskey(c,false,false)
-    }
+  // if (mode == "perfect") {
+  for (let c of perfectwords[0]) {
+    presskey(c,false,false)
   }
+  // }
   const prev = window.localStorage.getItem(rand ? "prevrand" : "prevday")
   if (parseInt(prev) !== day) {
     window.localStorage.setItem(rand ? "prevrand" : "prevday",day)
-    for (let i = 1; i < 2316; i++) {
-      window.localStorage.removeItem(`saved-classic${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`saved-speed${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`saved-perfect${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`starttime-speed${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`endtime-speed${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`starttime-perfect${rand ? "-rand" : ""}-${i}`)
-      window.localStorage.removeItem(`endtime-perfect${rand ? "-rand" : ""}-${i}`)
-    }
+    // for (let i = 1; i < 2316; i++) {
+    window.localStorage.removeItem(`saved${rand ? "-rand" : ""}`)
+    // window.localStorage.removeItem(`saved-classic${rand ? "-rand" : ""}-${i}`)
+    // window.localStorage.removeItem(`saved-speed${rand ? "-rand" : ""}-${i}`)
+    // window.localStorage.removeItem(`saved-perfect${rand ? "-rand" : ""}-${i}`)
+    // window.localStorage.removeItem(`starttime-speed${rand ? "-rand" : ""}-${i}`)
+    // window.localStorage.removeItem(`endtime-speed${rand ? "-rand" : ""}-${i}`)
+    window.localStorage.removeItem(`starttime${rand ? "-rand" : ""}`)
+    window.localStorage.removeItem(`endtime${rand ? "-rand" : ""}`)
+    // }
   } else {
-    if (mode === "speed" || mode === "perfect") {
-      const currtime = window.localStorage.getItem(`starttime-${mode}${rand ? "-rand" : ""}-${n}`)
-      if (!!currtime && !isNaN(currtime)) {
-        starttime = new Date(parseInt(currtime))
-        startspeedmode()
-      }
+    // if (mode === "speed" || mode === "perfect") {
+    const currtime = window.localStorage.getItem(`starttime${rand ? "-rand" : ""}`)
+    if (!!currtime && !isNaN(currtime)) {
+      starttime = new Date(parseInt(currtime))
+      startspeedmode()
     }
-    const savedstr = window.localStorage.getItem(`saved-${mode}${rand ? "-rand" : ""}-${n}`)
+    // }
+    const savedstr = window.localStorage.getItem(`saved${rand ? "-rand" : ""}`)
     if (!!savedstr) {
       for (let c of savedstr.split("")) {
         presskey(c === "," ? "Enter" : c,false)
       }
     }
   }
-  if (!window.localStorage.getItem(`saved-${mode}${rand ? "-rand" : ""}-${n}`)) {
-    window.localStorage.setItem(`saved-${mode}${rand ? "-rand" : ""}-${n}`,"")
+  if (!window.localStorage.getItem(`saved${rand ? "-rand" : ""}`)) {
+    window.localStorage.setItem(`saved${rand ? "-rand" : ""}`,"")
   }
-  if (mode === "speed" || mode === "perfect") {
-    document.getElementById("timer").style.display = "flex"
-    document.documentElement.style.setProperty('--timer-size', 'var(--timer-tot-height)');
-  }
+  // if (mode === "speed" || mode === "perfect") {
+  document.getElementById("timer").style.display = "flex"
+  document.documentElement.style.setProperty('--timer-size', 'var(--timer-tot-height)');
+  // }
 }
 
 const makehiddens = []
@@ -713,22 +681,22 @@ const closeHowTo = () => {
   makehiddens.push(setTimeout(() => menu.style.visibility = "hidden", 1100));
 }
 
-const expandModes = (mode) => {
-  for (let i = 0; i < 3; i++) {
-    const m = ["classic","speed","perfect"][i]
-    if (m === mode) {
-      const frontbtn = document.getElementById(`${m}btn`)
-      frontbtn.style.display = "none"
-      const dailybtn = document.getElementById(`${m}${i % 2 ? "random" : "daily"}`)
-      dailybtn.style.width = i % 2 ? "59%" : "41%"
-    } else {
-      const frontbtn = document.getElementById(`${m}btn`)
-      frontbtn.style.display = "flex"
-      const dailybtn = document.getElementById(`${m}${i % 2 ? "random" : "daily"}`)
-      dailybtn.style.width = "100%"
-    }
-  }
-}
+// const expandModes = (mode) => {
+//   for (let i = 0; i < 3; i++) {
+//     const m = ["classic","speed","perfect"][i]
+//     if (m === mode) {
+//       const frontbtn = document.getElementById(`${m}btn`)
+//       frontbtn.style.display = "none"
+//       const dailybtn = document.getElementById(`${m}${i % 2 ? "random" : "daily"}`)
+//       dailybtn.style.width = i % 2 ? "59%" : "41%"
+//     } else {
+//       const frontbtn = document.getElementById(`${m}btn`)
+//       frontbtn.style.display = "flex"
+//       const dailybtn = document.getElementById(`${m}${i % 2 ? "random" : "daily"}`)
+//       dailybtn.style.width = "100%"
+//     }
+//   }
+// }
 
 document.addEventListener('DOMContentLoaded', () => {
   let delay = 300
